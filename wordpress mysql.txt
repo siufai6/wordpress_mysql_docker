@@ -1,0 +1,99 @@
+- on wsl ubuntun, create /home/wordpress
+-  create wordpress/.env
+
+MYSQL_ROOT_PASSWORD=root_pwd
+MYSQL_USER=db_user
+MYSQL_PASSWORD=db_pwd
+
+- source .env
+-  vi docker-compose.yml
+----------
+version: '3'
+
+services:
+  db:
+    image: mysql:latest
+    container_name: db
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - MYSQL_DATABASE=wordpress
+      - MYSQL_USER: $MYSQL_USER
+      - MYSQL_PASSWORD: $MYSQL_PASSWORD
+	  - MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD
+    volumes:
+      - dbdata:/var/lib/mysql
+    command: '--default-authentication-plugin=mysql_native_password'
+    networks:
+      - app-network
+
+  wordpress:
+    ports:
+      - "8000:80"  # Host port:Container port
+    depends_on:
+      - db
+    image: wordpress:latest
+    container_name: wordpress
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      - WORDPRESS_DB_HOST=db:3306
+      - WORDPRESS_DB_USER=$MYSQL_USER
+      - WORDPRESS_DB_PASSWORD=$MYSQL_PASSWORD
+      - WORDPRESS_DB_NAME=wordpress
+    volumes:
+      - wordpress:/var/www/html
+    networks:
+      - app-network
+
+
+volumes:
+  wordpress:
+  dbdata:
+
+networks:
+  app-network:
+    driver: bridge
+-----------------
+- docker-compose up -d
+- docker-compose exec wordpress bash
+- there is no util in the image.. 
+build a custom docker : dockerfile
+----
+FROM wordpress:latest
+
+RUN apt-get update && \
+    apt-get install -y nano vim && \
+    rm -rf /var/lib/apt/lists/*
+----
+change docker-compose file to:
+services:
+  wordpress:
+    build: .
+	
+----
+docker-compose up --build -d
+
+
+
+- inside the docker image, apt-get update
+-apt-get install vim
+
+
+
+@ini_set('log_errors', 'On');
+@ini_set('error_log', '/path/to/wordpress-error.log');
+
+
+
+
+---
+wptest
+silva/iSxoHv61gw3pDvEH@p
+
+to check for errors:
+---
+docker-compose logs -f db
+docker-compose logs -f wordpress
+
+
